@@ -145,7 +145,8 @@
               "base-chain/node-operators/performance-tuning",
               "base-chain/node-operators/snapshots",
               "base-chain/node-operators/node-providers",
-              "base-chain/node-operators/troubleshooting"
+              "base-chain/node-operators/troubleshooting",
+              "base-chain/troubleshooting"
             ]
           },
           {
