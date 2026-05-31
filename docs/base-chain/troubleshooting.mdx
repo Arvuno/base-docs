@@ -1,0 +1,120 @@
+---
+title: Troubleshooting
+description: Comprehensive troubleshooting guide for Base — common setup issues, runtime errors, exit codes, network problems, and recovery steps.
+---
+
+This guide covers general issues you may encounter when building on or interacting with Base. For node-specific issues, see the [Node Troubleshooting guide](/base-chain/node-operators/troubleshooting). For transaction issues, see [Troubleshooting Transactions](/base-chain/network-information/troubleshooting-transactions).
+
+## Exit Codes
+
+Base and its underlying components (OP Stack, Ethereum clients) use standard exit codes that can help diagnose failures.
+
+| Exit Code | Meaning | Common Cause |
+|-----------|---------|--------------|
+| `0` | Success | Normal operation |
+| `1` | General error | Misconfiguration, missing dependencies |
+| `2` | Misconfiguration | Invalid environment variables, missing `.env` file |
+| `3` | Port already in use | Another process is using required ports |
+| `4` | Database error | Corrupted data, disk I/O issues |
+| `5` | Authentication failure | Invalid JWT, missing auth credentials |
+| `127` | Command not found | Missing binary or tool not in PATH |
+
+For Docker-based setups, container exit codes follow Docker conventions. A container that exits with code `137` indicates it was killed due to out-of-memory (OOM).
+
+## Common Errors
+
+### RPC Errors
+
+- **Connection refused**: Ensure your RPC endpoint is correct and the service is running. Check that the port is open and not blocked by a firewall.
+- **429 Too Many Requests**: You are being rate-limited. Reduce request frequency or upgrade to a higher-tier RPC plan.
+- **403 Forbidden**: Your API key may be invalid or expired. Check your provider dashboard.
+- **503 Service Unavailable**: The RPC endpoint is temporarily down. Try again or switch to a fallback endpoint.
+
+### Transaction Errors
+
+- **nonce too low**: You are attempting to reuse a nonce. Use `eth_getTransactionCount` with `"pending"` to get the correct nonce.
+- **replacement transaction underpriced**: When replacing a pending transaction, the new one must have a gas price at least 10% higher.
+- **insufficient funds**: Your wallet does not have enough ETH to cover the transaction value plus gas.
+- **gas required exceeds allowance**: Your transaction's gas limit exceeds the network maximum (25M gas on Base).
+
+### Build / Deployment Errors
+
+- **Contract verification failed**: Ensure your compiler version matches the one used during compilation. Check that constructor arguments are correctly encoded.
+- **Out of gas**: Estimate gas with `eth_estimateGas` and add a 20% buffer before resubmitting.
+
+## Network Issues
+
+### Wrong Network
+
+If your app or wallet is connected to the wrong network:
+
+1. **Check chain ID**: Base Mainnet uses chain ID `8453`, Base Sepolia uses `84532`.
+2. **Switch networks**: In MetaMask, click the network name, then "Add Network" and enter the correct Base network settings.
+3. **Clear cache**: Some apps cache network configuration. Try clearing browser cache or using an incognito window.
+
+### RPC Connectivity
+
+If your RPC calls are failing:
+
+1. **Verify endpoint URL**: Ensure you are using the correct RPC endpoint (e.g., `https://mainnet.base.org` for mainnet).
+2. **Check CORS settings**: If calling from a browser, ensure the RPC endpoint allows cross-origin requests.
+3. **Try a different RPC**: Use a fallback RPC provider to determine if the issue is with your provider or your setup.
+
+### WebSocket Issues
+
+WebSocket connections (`wss://`) can drop due to network issues. Implement reconnection logic:
+
+```javascript
+const ws = new WebSocket('wss://mainnet.base.org/ws');
+ws.onclose = () => {
+  // Reconnect after delay
+  setTimeout(() => connect(), 1000);
+};
+```
+
+## Recovery Steps
+
+### Wallet / Account Recovery
+
+If you lose access to your wallet:
+
+1. **Recover using seed phrase**: If you have your 12 or 24-word seed phrase, import it into any compatible wallet (MetaMask, Coinbase Wallet, etc.).
+2. **Hardware wallet**: If using a hardware wallet, recover using your device's recovery phrase.
+3. **Social recovery**: If using a smart wallet with social recovery, contact your designated guardians.
+
+### Application State Recovery
+
+If your application gets into a stuck state:
+
+1. **Clear local storage**: Browser apps may store stale state in `localStorage` or `sessionStorage`.
+2. **Reset RPC connection**: Disconnect and reconnect your wallet.
+3. **Restart the app**: Close and reopen the application.
+4. **Check for known issues**: Check the [Base Status page](https://status.base.org/) and our [Twitter/X](https://x.com/buildonbase) for ongoing incidents.
+
+### Node Recovery
+
+For node recovery scenarios, see the [Node Troubleshooting guide](/base-chain/node-operators/troubleshooting#snapshot-restoration-problems). Common recovery steps include:
+
+1. **Restart services**: `docker compose down && docker compose up`
+2. **Restore from snapshot**: If sync is stuck, restore from a recent [snapshot](/base-chain/node-operators/snapshots).
+3. **Check disk space**: Ensure you have sufficient disk space (see [storage requirements](/base-chain/node-operators/performance-tuning)).
+4. **Verify L1 connectivity**: Ensure your L1 node is healthy and synced.
+
+### Data Recovery
+
+If you suspect data corruption:
+
+1. **Stop the node**: `docker compose down` before making any changes.
+2. **Backup current data**: Copy the data directory to a backup location.
+3. **Restore from snapshot**: Download and restore a [recent snapshot](/base-chain/node-operators/snapshots).
+4. **Verify sync**: After restoration, monitor logs to confirm the node syncs correctly.
+
+## Getting Help
+
+If you've tried the above steps and are still experiencing issues:
+
+- **Discord**: Join the [Base Discord](https://discord.gg/buildonbase) and post in the relevant channel (`🛠｜node-operators` for nodes, `#developer-chat` for general development).
+- **GitHub Issues**: Check existing issues or open a new one at the relevant repository:
+  - [base/docs](https://github.com/base/docs/issues) for documentation issues
+  - [base/node](https://github.com/base/node/issues) for node issues
+  - [base/contracts](https://github.com/base/contracts/issues) for smart contract issues
